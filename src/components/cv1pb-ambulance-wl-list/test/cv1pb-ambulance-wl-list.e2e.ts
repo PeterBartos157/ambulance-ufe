@@ -1,17 +1,11 @@
-import { newSpecPage } from '@stencil/core/testing';
-import { Cv1pbAmbulanceWlList } from '../cv1pb-ambulance-wl-list';
+import { newE2EPage } from '@stencil/core/testing';
 
-describe('<pfx>-ambulance-wl-list', () => {
-    it('renders', async () => {
-      const page = await newSpecPage({
-          components: [Cv1pbAmbulanceWlList],
-          html: `<<pfx>-ambulance-wl-list></<pfx>-ambulance-wl-list>`,
-      });
+describe('cv1pb-ambulance-wl-list', () => {
+  it('renders', async () => {
+    const page = await newE2EPage();
+    await page.setContent('<cv1pb-ambulance-wl-list></cv1pb-ambulance-wl-list>');
 
-      const wlList = page.rootInstance as Cv1pbAmbulanceWlList;
-      const expectedPatients = wlList?.waitingPatients?.length
-
-      const items = page.root.shadowRoot.querySelectorAll("md-list-item");
-      expect(items.length).toEqual(expectedPatients);
-    });
+    const element = await page.find('cv1pb-ambulance-wl-list');
+    expect(element).toHaveClass('hydrated');
+  });
 });
