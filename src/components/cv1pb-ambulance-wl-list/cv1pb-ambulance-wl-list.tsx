@@ -24,7 +24,7 @@ export class Cv1pbAmbulanceWlList {
           estimatedDurationMinutes: 20,
           condition: 'Teploty'
       }, {
-          name: 'Ing. Ferdinand Trety',
+          name: 'Ing. Ferdinand Tretí',
           patientId: '10028',
           estimatedStart: new Date(Date.now() + 5 * 60),
           estimatedDurationMinutes: 15,
