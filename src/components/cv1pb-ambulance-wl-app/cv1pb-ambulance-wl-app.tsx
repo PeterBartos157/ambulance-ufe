@@ -37,6 +37,7 @@ export class Cv1pbAmbulanceWlApp {
   }
 
   render() {
+    console.debug("cv1pb-ambulance-wl-app.render() - path: %s", this.relativePath);
     let element = "list"
     let entryId = "@new"
 

@@ -35,6 +35,7 @@ export class Cv1pbAmbulanceWlEditor {
         waitingSince: new Date(Date.now()),
         estimatedDurationMinutes: 15
       };
+      this.entry.estimatedStart = await this.assumedEntryDateAsync();
       return this.entry;
     }
 
@@ -61,6 +62,29 @@ export class Cv1pbAmbulanceWlEditor {
       this.errorMessage = `Cannot retrieve list of waiting patients: ${err.message || "unknown"}`
     }
     return undefined;
+  }
+
+  private async assumedEntryDateAsync(): Promise<Date> {
+    try {
+      const configuration = new Configuration({
+        basePath: this.apiBase,
+      });
+
+      const waitingListApi = new AmbulanceWaitingListApi(configuration);
+      const response = await waitingListApi.getWaitingListEntriesRaw({ ambulanceId: this.ambulanceId })
+      if (response.raw.status > 299) {
+        return new Date();
+      }
+      const lastPatientOut = (await response.value())
+        .map((_: WaitingListEntry) =>
+          _.estimatedStart.getTime()
+          + _.estimatedDurationMinutes * 60 * 1000
+        )
+        .reduce((acc: number, value: number) => Math.max(acc, value), 0);
+      return new Date(Math.max(Date.now(), lastPatientOut));
+    } catch (err: any) {
+      return new Date();
+    }
   }
 
   private async getConditions(): Promise<Condition[]> {
@@ -118,8 +142,14 @@ export class Cv1pbAmbulanceWlEditor {
           </md-filled-text-field>
 
           <md-filled-text-field label="Čakáte od" disabled
-            value={this.entry?.waitingSince}>
+            value={new Date(this.entry?.waitingSince || Date.now()).toLocaleTimeString()}>
             <md-icon slot="leading-icon">watch_later</md-icon>
+          </md-filled-text-field>
+
+          <md-filled-text-field disabled
+            label="Predpokladaný čas vyšetrenia"
+            value={new Date(this.entry?.estimatedStart || Date.now()).toLocaleTimeString()}>
+            <md-icon slot="leading-icon">login</md-icon>
           </md-filled-text-field>
 
           {this.renderConditions()}
@@ -170,36 +200,36 @@ export class Cv1pbAmbulanceWlEditor {
     if (this.entry?.condition) {
       const index = conditions.findIndex(condition => condition.code === this.entry.condition.code)
       if (index < 0) {
-      conditions = [this.entry.condition, ...conditions]
+        conditions = [this.entry.condition, ...conditions]
       }
     }
     return (
       <md-filled-select label="Dôvod návštevy"
         display-text={this.entry?.condition?.value}
         oninput={(ev: InputEvent) => this.handleCondition(ev)} >
-      <md-icon slot="leading-icon">sick</md-icon>
-      {this.entry?.condition?.reference ?
-        <md-icon slot="trailing-icon" class="link"
-          onclick={()=> window.open(this.entry.condition.reference, "_blank")}>
+        <md-icon slot="leading-icon">sick</md-icon>
+        {this.entry?.condition?.reference ?
+          <md-icon slot="trailing-icon" class="link"
+            onclick={() => window.open(this.entry.condition.reference, "_blank")}>
             open_in_new
-        </md-icon>
-      : undefined
-      }
-      {conditions.map(condition => {
+          </md-icon>
+          : undefined
+        }
+        {conditions.map(condition => {
           return (
             <md-select-option
-            value={condition.code}
-            selected={condition.code === this.entry?.condition?.code}>
-                <div slot="headline">{condition.value}</div>
+              value={condition.code}
+              selected={condition.code === this.entry?.condition?.code}>
+              <div slot="headline">{condition.value}</div>
             </md-select-option>
           )
-      })}
+        })}
       </md-filled-select>
     );
   }
 
   private handleCondition(ev: InputEvent) {
-    if(this.entry) {
+    if (this.entry) {
       const code = this.handleInputEvent(ev)
       const condition = this.conditions.find(condition => condition.code === code);
       this.entry.condition = Object.assign({}, condition);
